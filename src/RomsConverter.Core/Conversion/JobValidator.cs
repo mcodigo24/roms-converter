@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using RomsConverter.Core.Archives;
 
 namespace RomsConverter.Core.Conversion;
 
@@ -8,8 +9,6 @@ namespace RomsConverter.Core.Conversion;
 /// </summary>
 public sealed partial class JobValidator : IJobValidator
 {
-    private static readonly string[] ArchiveExtensions = [".zip", ".7z", ".rar"];
-
     public ValidationResult Validate(ConversionJob job)
     {
         var errors = new List<string>();
@@ -22,7 +21,7 @@ public sealed partial class JobValidator : IJobValidator
             return Result(errors);
         }
 
-        if (ArchiveExtensions.Contains(extension))
+        if (ArchiveFileTypes.IsArchive(source))
             return Result(errors);
 
         var expected = job.Console == ConsoleKind.PlayStation ? ".cue" : ".iso";
@@ -35,7 +34,7 @@ public sealed partial class JobValidator : IJobValidator
         if (job.Console == ConsoleKind.PlayStation)
             ValidateCueReferences(source, errors);
 
-        var outputPath = GetOutputPath(job);
+        var outputPath = OutputPaths.For(job.Console, source, job.OutputDirectory);
         if (File.Exists(outputPath))
             errors.Add($"Ya existe el archivo de salida: {Path.GetFileName(outputPath)}");
 
@@ -65,13 +64,6 @@ public sealed partial class JobValidator : IJobValidator
             if (!File.Exists(Path.Combine(directory, name)))
                 errors.Add($"Falta el archivo referenciado por el .cue: {name}");
         }
-    }
-
-    private static string GetOutputPath(ConversionJob job)
-    {
-        var extension = job.Console == ConsoleKind.PlayStation ? ".chd" : ".cso";
-        var name = Path.GetFileNameWithoutExtension(job.SourcePath);
-        return Path.Combine(job.OutputDirectory, name + extension);
     }
 
     private static string ConsoleName(ConsoleKind console) =>
