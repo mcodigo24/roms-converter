@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:RomsConverter.App.ViewModels"
         xmlns:conv="clr-namespace:RomsConverter.Core.Conversion;assembly=RomsConverter.Core"
-        Title="{Binding Title}" Height="450" Width="800">
+        Title="{Binding Title}" Height="600" Width="900" MinHeight="450" MinWidth="700">
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
@@ -14,6 +14,10 @@
             <Setter Property="Height" Value="120" />
             <Setter Property="Margin" Value="16" />
             <Setter Property="FontSize" Value="24" />
+        </Style>
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Padding" Value="16,6" />
+            <Setter Property="Margin" Value="8,0,0,0" />
         </Style>
     </Window.Resources>
     <Grid>
@@ -32,9 +36,89 @@
             </StackPanel>
         </StackPanel>
 
-        <!-- Pantalla 2: cola (se completa en el paso 10) -->
-        <TextBlock Visibility="{Binding IsConsoleSelected, Converter={StaticResource BoolToVisibility}}"
-                   Text="{Binding SelectedConsoleName, StringFormat=Cola de conversión — {0}}"
-                   FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <!-- Pantalla 2: cola de conversión -->
+        <Grid Margin="16" Visibility="{Binding IsConsoleSelected, Converter={StaticResource BoolToVisibility}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Encabezado -->
+            <DockPanel Grid.Row="0">
+                <Button DockPanel.Dock="Right" Content="Cambiar consola" Padding="12,4"
+                        Command="{Binding ChangeConsoleCommand}" />
+                <TextBlock Text="{Binding SelectedConsoleName, StringFormat=Consola: {0}}"
+                           FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </DockPanel>
+
+            <!-- Avisos -->
+            <StackPanel Grid.Row="1" Margin="0,8,0,0">
+                <TextBlock Text="{Binding ToolsMessage}" Foreground="Firebrick" TextWrapping="Wrap"
+                           Visibility="{Binding HasToolsMessage, Converter={StaticResource BoolToVisibility}}" />
+                <TextBlock Text="{Binding Notice}" Foreground="DarkOrange" TextWrapping="Wrap"
+                           Visibility="{Binding HasNotice, Converter={StaticResource BoolToVisibility}}" />
+            </StackPanel>
+
+            <!-- Zona de arrastrar y soltar -->
+            <Border Grid.Row="2" Margin="0,12,0,0" Padding="16" BorderThickness="2"
+                    BorderBrush="Gray" CornerRadius="6" AllowDrop="True" Background="Transparent"
+                    Drop="DropZone_Drop" DragOver="DropZone_DragOver">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Agregar archivos…" Style="{StaticResource ActionButton}"
+                            IsEnabled="{Binding CanEdit}" Click="AddFiles_Click" />
+                    <StackPanel>
+                        <TextBlock Text="Arrastrá y soltá los juegos acá" FontSize="16" />
+                        <TextBlock Text="{Binding AcceptedFormatsText}" Foreground="Gray" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Lista -->
+            <ListView Grid.Row="3" Margin="0,12,0,0" ItemsSource="{Binding Items}"
+                      HorizontalContentAlignment="Stretch" AllowDrop="True"
+                      Drop="DropZone_Drop" DragOver="DropZone_DragOver">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="200" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding DisplayMessage}" Foreground="Firebrick" TextWrapping="Wrap"
+                                           Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding StatusText}" VerticalAlignment="Center"
+                                       Margin="8,0" />
+                            <ProgressBar Grid.Column="2" Height="16" Minimum="0" Maximum="100"
+                                         Value="{Binding Percent, Mode=OneWay}"
+                                         IsIndeterminate="{Binding IsIndeterminate}" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <!-- Carpeta de salida -->
+            <DockPanel Grid.Row="4" Margin="0,12,0,0">
+                <TextBlock DockPanel.Dock="Left" Text="Carpeta de salida:" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <Button DockPanel.Dock="Right" Content="Elegir…" Style="{StaticResource ActionButton}"
+                        IsEnabled="{Binding CanEdit}" Click="ChooseOutput_Click" />
+                <TextBox Text="{Binding OutputDirectory, UpdateSourceTrigger=LostFocus}"
+                         IsEnabled="{Binding CanEdit}" VerticalContentAlignment="Center" Padding="4" />
+            </DockPanel>
+
+            <!-- Acciones -->
+            <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                <Button Content="Cancelar" Style="{StaticResource ActionButton}" Command="{Binding CancelCommand}" />
+                <Button Content="Convertir" Style="{StaticResource ActionButton}" Command="{Binding ConvertCommand}"
+                        FontWeight="SemiBold" />
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

@@ -9,6 +9,15 @@ namespace RomsConverter.Core.Conversion;
 /// </summary>
 public sealed partial class JobValidator : IJobValidator
 {
+    /// <summary>
+    /// true si la extensión sirve de entrada para la consola: el archivo de juego
+    /// (.cue en PlayStation, .iso en PSP) o un comprimido.
+    /// </summary>
+    public static bool IsAcceptedSource(ConsoleKind console, string path) =>
+        ArchiveFileTypes.IsArchive(path) ||
+        string.Equals(Path.GetExtension(path), console == ConsoleKind.PlayStation ? ".cue" : ".iso",
+            StringComparison.OrdinalIgnoreCase);
+
     public ValidationResult Validate(ConversionJob job)
     {
         var errors = new List<string>();

@@ -136,6 +136,21 @@ public sealed class JobValidatorTests : IDisposable
         Assert.False(result.IsValid);
     }
 
+    [Theory]
+    [InlineData(ConsoleKind.PlayStation, "game.cue", true)]
+    [InlineData(ConsoleKind.PlayStation, "GAME.CUE", true)]
+    [InlineData(ConsoleKind.PlayStation, "game.zip", true)]
+    [InlineData(ConsoleKind.PlayStation, "game.7z", true)]
+    [InlineData(ConsoleKind.PlayStation, "game.rar", true)]
+    [InlineData(ConsoleKind.PlayStation, "game.iso", false)]
+    [InlineData(ConsoleKind.PlayStation, "game.bin", false)]
+    [InlineData(ConsoleKind.Psp, "game.iso", true)]
+    [InlineData(ConsoleKind.Psp, "game.cue", false)]
+    public void IsAcceptedSource_follows_console_rules(ConsoleKind console, string path, bool expected)
+    {
+        Assert.Equal(expected, JobValidator.IsAcceptedSource(console, path));
+    }
+
     [Fact]
     public void Archive_passes_extension_check()
     {
