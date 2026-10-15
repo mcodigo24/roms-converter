@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:RomsConverter.App.ViewModels"
         xmlns:conv="clr-namespace:RomsConverter.Core.Conversion;assembly=RomsConverter.Core"
-        Title="{Binding Title}" Height="600" Width="900" MinHeight="450" MinWidth="700">
+        Title="{Binding Title}" Height="600" Width="900" MinHeight="450" MinWidth="700"
+        Background="{StaticResource BackgroundBrush}" Foreground="{StaticResource TextBrush}">
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
@@ -54,12 +55,13 @@
             </Grid.RowDefinitions>
 
             <!-- Encabezado -->
-            <DockPanel Grid.Row="0">
-                <Button DockPanel.Dock="Right" Content="Cambiar consola"
+            <StackPanel Grid.Row="0" Orientation="Horizontal">
+                <Button Style="{StaticResource IconButton}" Content="&#xE72B;"
+                        ToolTip="Cambiar consola" AutomationProperties.Name="Cambiar consola"
                         Command="{Binding ChangeConsoleCommand}" />
-                <TextBlock Text="{Binding SelectedConsoleName, StringFormat=Consola: {0}}"
+                <TextBlock Text="{Binding SelectedConsoleName}" Margin="12,0,0,0"
                            FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
-            </DockPanel>
+            </StackPanel>
 
             <!-- Avisos -->
             <StackPanel Grid.Row="1" Margin="0,8,0,0">

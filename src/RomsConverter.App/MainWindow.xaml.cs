@@ -1,5 +1,7 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using Microsoft.Win32;
 using RomsConverter.App.ViewModels;
 using RomsConverter.Core.Conversion;
@@ -14,7 +16,24 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => ApplyDarkTitleBar();
     }
+
+    // Barra de título oscura (Windows 10 2004+/11); en versiones anteriores simplemente no tiene efecto.
+    private void ApplyDarkTitleBar()
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+        var dark = 1;
+        DwmSetWindowAttribute(handle, 20 /* DWMWA_USE_IMMERSIVE_DARK_MODE */, ref dark, sizeof(int));
+
+        var caption = 0x001A1B1C; // COLORREF 0x00BBGGRR de #1C1B1A
+        var text = 0x00C4CFD6;    // #D6CFC4
+        DwmSetWindowAttribute(handle, 35 /* DWMWA_CAPTION_COLOR */, ref caption, sizeof(int));
+        DwmSetWindowAttribute(handle, 36 /* DWMWA_TEXT_COLOR */, ref text, sizeof(int));
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
     private MainViewModel ViewModel => (MainViewModel)DataContext;
 
