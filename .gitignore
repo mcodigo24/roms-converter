@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Proyecto WPF (el patron *.app ignoraria RomsConverter.App en Windows)
+!src/RomsConverter.App/
