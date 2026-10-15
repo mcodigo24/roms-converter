@@ -30,24 +30,36 @@ public sealed partial class JobValidator : IJobValidator
             return Result(errors);
         }
 
-        if (ArchiveFileTypes.IsArchive(source))
-            return Result(errors);
-
-        var expected = job.Console == ConsoleKind.PlayStation ? ".cue" : ".iso";
-        if (extension != expected)
+        if (!ArchiveFileTypes.IsArchive(source))
         {
-            errors.Add($"Archivo no válido para {ConsoleName(job.Console)}: se esperaba {expected} o un comprimido (.zip, .7z, .rar), pero es {extension}.");
-            return Result(errors);
+            var expected = job.Console == ConsoleKind.PlayStation ? ".cue" : ".iso";
+            if (extension != expected)
+            {
+                errors.Add($"Archivo no válido para {ConsoleName(job.Console)}: se esperaba {expected} o un comprimido (.zip, .7z, .rar), pero es {extension}.");
+                return Result(errors);
+            }
+
+            if (job.Console == ConsoleKind.PlayStation)
+                ValidateCueReferences(source, errors);
         }
 
-        if (job.Console == ConsoleKind.PlayStation)
-            ValidateCueReferences(source, errors);
-
-        var outputPath = OutputPaths.For(job.Console, source, job.OutputDirectory);
-        if (File.Exists(outputPath))
-            errors.Add($"Ya existe el archivo de salida: {Path.GetFileName(outputPath)}");
+        ValidateOutput(job, errors);
 
         return Result(errors);
+    }
+
+    private static void ValidateOutput(ConversionJob job, List<string> errors)
+    {
+        var expected = OutputPaths.ExtensionFor(job.Console);
+        if (string.IsNullOrWhiteSpace(job.OutputPath) ||
+            !string.Equals(Path.GetExtension(job.OutputPath), expected, StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add($"La salida debe ser un archivo {expected}.");
+            return;
+        }
+
+        if (File.Exists(job.OutputPath))
+            errors.Add($"Ya existe el archivo de salida: {Path.GetFileName(job.OutputPath)}");
     }
 
     private static void ValidateCueReferences(string cuePath, List<string> errors)

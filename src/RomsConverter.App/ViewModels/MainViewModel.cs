@@ -10,11 +10,6 @@ namespace RomsConverter.App.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
-    // Carpeta de salida "de relleno" para validar antes de que el usuario elija una:
-    // nunca contiene salidas, así no dispara el chequeo de archivo existente.
-    private static readonly string PlaceholderOutput =
-        Path.Combine(Path.GetTempPath(), "RomsConverter", "sin-salida");
-
     private readonly IJobValidator _validator = new JobValidator();
     private readonly ConversionQueue _queue;
     private CancellationTokenSource? _cts;
@@ -66,10 +61,6 @@ public partial class MainViewModel : ObservableObject
     public bool HasToolsMessage => ToolsMessage is not null;
 
     public ObservableCollection<QueueItemViewModel> Items { get; } = [];
-
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ConvertCommand))]
-    private string _outputDirectory = string.Empty;
 
     /// <summary>Último aviso al agregar archivos (rechazos, duplicados); null si no hay.</summary>
     [ObservableProperty]
@@ -140,7 +131,7 @@ public partial class MainViewModel : ObservableObject
                 continue;
             }
 
-            var item = new QueueItemViewModel(path);
+            var item = new QueueItemViewModel(path, console);
             Validate(item, console);
             Items.Add(item);
         }
@@ -149,11 +140,14 @@ public partial class MainViewModel : ObservableObject
         ConvertCommand.NotifyCanExecuteChanged();
     }
 
-    partial void OnOutputDirectoryChanged(string value)
+    /// <summary>Cambia la ruta de salida de un ítem y lo revalida (y a los demás, por duplicados).</summary>
+    public void SetOutputPath(QueueItemViewModel item, string outputPath)
     {
-        if (SelectedConsole is not { } console) return;
-        foreach (var item in Items.Where(i => !i.IsCompleted))
-            Validate(item, console);
+        if (SelectedConsole is not { } console || IsRunning) return;
+
+        item.OutputPath = outputPath;
+        foreach (var other in Items.Where(i => !i.IsCompleted))
+            Validate(other, console);
         ConvertCommand.NotifyCanExecuteChanged();
     }
 
@@ -162,15 +156,23 @@ public partial class MainViewModel : ObservableObject
 
     private void Validate(QueueItemViewModel item, ConsoleKind console)
     {
-        var output = string.IsNullOrWhiteSpace(OutputDirectory) ? PlaceholderOutput : OutputDirectory;
-        var result = _validator.Validate(new ConversionJob(item.Id, console, item.SourcePath, output));
-        item.ValidationMessage = result.IsValid ? null : string.Join(Environment.NewLine, result.Errors);
+        var result = _validator.Validate(new ConversionJob(item.Id, console, item.SourcePath, item.OutputPath));
+        var errors = result.Errors.ToList();
+
+        // Dos ítems no pueden escribir en el mismo archivo: el primero de la cola se lo queda.
+        var clash = Items
+            .TakeWhile(i => i.Id != item.Id)
+            .FirstOrDefault(i => string.Equals(
+                Path.GetFullPath(i.OutputPath), Path.GetFullPath(item.OutputPath), StringComparison.OrdinalIgnoreCase));
+        if (clash is not null)
+            errors.Add($"Otra entrada ({clash.DisplayName}) ya usa la misma salida: {Path.GetFileName(item.OutputPath)}");
+
+        item.ValidationMessage = errors.Count == 0 ? null : string.Join(Environment.NewLine, errors);
     }
 
     private bool CanConvert() =>
         !IsRunning
         && !HasToolsMessage
-        && !string.IsNullOrWhiteSpace(OutputDirectory)
         && Items.Any(i => !i.IsCompleted && !i.IsInvalid);
 
     [RelayCommand(CanExecute = nameof(CanConvert))]
@@ -187,7 +189,7 @@ public partial class MainViewModel : ObservableObject
         }
 
         var jobs = runnable
-            .Select(i => new ConversionJob(i.Id, console, i.SourcePath, OutputDirectory))
+            .Select(i => new ConversionJob(i.Id, console, i.SourcePath, i.OutputPath))
             .ToList();
 
         _cts = new CancellationTokenSource();

@@ -4,13 +4,20 @@ using RomsConverter.Core.Conversion;
 
 namespace RomsConverter.App.ViewModels;
 
-public partial class QueueItemViewModel(string sourcePath) : ObservableObject
+public partial class QueueItemViewModel(string sourcePath, ConsoleKind console) : ObservableObject
 {
     public Guid Id { get; } = Guid.NewGuid();
 
     public string SourcePath { get; } = sourcePath;
 
     public string DisplayName { get; } = Path.GetFileName(sourcePath);
+
+    /// <summary>Archivo .chd/.cso de salida; por defecto junto al original con el mismo nombre.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(OutputFileName))]
+    private string _outputPath = OutputPaths.DefaultFor(console, sourcePath);
+
+    public string OutputFileName => Path.GetFileName(OutputPath);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StatusText))]

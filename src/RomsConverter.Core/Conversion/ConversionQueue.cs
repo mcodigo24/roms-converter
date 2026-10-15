@@ -75,8 +75,8 @@ public sealed class ConversionQueue(
                 }
             }
 
-            Directory.CreateDirectory(job.OutputDirectory);
-            var destination = OutputPaths.For(job.Console, gameFile, job.OutputDirectory);
+            var destination = job.OutputPath;
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(destination))!);
 
             Report(ConversionStatus.Converting, 0);
             await converterFor(job.Console).ConvertAsync(

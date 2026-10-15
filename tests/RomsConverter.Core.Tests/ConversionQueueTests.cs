@@ -58,8 +58,9 @@ public sealed class ConversionQueueTests : IDisposable
     private ConversionQueue CreateQueue(FakeConverter converter, Func<string, long>? freeSpace = null) =>
         new(new JobValidator(), new ArchiveExtractor(), _ => converter, _temp, freeSpace);
 
-    private ConversionJob Job(ConsoleKind console, string source) =>
-        new(Guid.NewGuid(), console, source, _output);
+    private ConversionJob Job(ConsoleKind console, string source, string? output = null) =>
+        new(Guid.NewGuid(), console, source,
+            output ?? Path.Combine(_output, Path.GetFileNameWithoutExtension(source) + OutputPaths.ExtensionFor(console)));
 
     private string WriteFile(string name, string content = "x")
     {
@@ -110,7 +111,7 @@ public sealed class ConversionQueueTests : IDisposable
         Assert.Equal(ConversionStatus.Completed, progress.LastOf(job.Id));
         Assert.Contains(ConversionStatus.Extracting, progress.StatusesOf(job.Id));
         Assert.StartsWith(Path.GetFullPath(_temp), converter.Sources.Single());
-        Assert.True(File.Exists(Path.Combine(_output, "game.chd")));
+        Assert.True(File.Exists(Path.Combine(_output, "pack.chd")));
         Assert.True(TempIsEmpty(job.Id));
     }
 
@@ -242,5 +243,18 @@ public sealed class ConversionQueueTests : IDisposable
 
         gate.SetResult();
         await first;
+    }
+
+    [Fact]
+    public async Task Custom_output_path_is_created_with_its_directory()
+    {
+        var custom = Path.Combine(_root, "elegida", "sub", "mi salida.cso");
+        var job = Job(ConsoleKind.Psp, WriteFile("game.iso"), custom);
+        var progress = new Collector();
+
+        await CreateQueue(new FakeConverter()).RunAsync([job], progress);
+
+        Assert.Equal(ConversionStatus.Completed, progress.LastOf(job.Id));
+        Assert.True(File.Exists(custom));
     }
 }

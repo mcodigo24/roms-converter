@@ -1,4 +1,5 @@
-﻿using System.Windows;
+using System.IO;
+using System.Windows;
 using Microsoft.Win32;
 using RomsConverter.App.ViewModels;
 using RomsConverter.Core.Conversion;
@@ -48,10 +49,23 @@ public partial class MainWindow : Window
             ViewModel.AddPaths(dialog.FileNames);
     }
 
-    private void ChooseOutput_Click(object sender, RoutedEventArgs e)
+    private void ChangeOutput_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog { Title = "Carpeta de salida" };
+        if (((FrameworkElement)sender).DataContext is not QueueItemViewModel item) return;
+
+        var extension = OutputPaths.ExtensionFor(ViewModel.SelectedConsole ?? ConsoleKind.PlayStation);
+        var dialog = new SaveFileDialog
+        {
+            Title = "Archivo de salida",
+            InitialDirectory = Path.GetDirectoryName(item.OutputPath),
+            FileName = Path.GetFileName(item.OutputPath),
+            DefaultExt = extension,
+            AddExtension = true,
+            OverwritePrompt = false, // si existe, el ítem queda inválido: nunca se sobrescribe
+            Filter = $"Archivo {extension} (*{extension})|*{extension}",
+        };
+
         if (dialog.ShowDialog(this) == true)
-            ViewModel.OutputDirectory = dialog.FolderName;
+            ViewModel.SetOutputPath(item, dialog.FileName);
     }
 }

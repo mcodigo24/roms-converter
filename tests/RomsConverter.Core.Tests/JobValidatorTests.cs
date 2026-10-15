@@ -24,8 +24,11 @@ public sealed class JobValidatorTests : IDisposable
         return path;
     }
 
-    private ConversionJob Job(ConsoleKind console, string source) =>
-        new(Guid.NewGuid(), console, source, _output);
+    private string OutputFor(ConsoleKind console, string source) =>
+        Path.Combine(_output, Path.GetFileNameWithoutExtension(source) + OutputPaths.ExtensionFor(console));
+
+    private ConversionJob Job(ConsoleKind console, string source, string? output = null) =>
+        new(Guid.NewGuid(), console, source, output ?? OutputFor(console, source));
 
     [Fact]
     public void Cue_with_existing_bin_is_valid()
@@ -157,5 +160,55 @@ public sealed class JobValidatorTests : IDisposable
         var zip = Write("game.zip");
 
         Assert.True(_validator.Validate(Job(ConsoleKind.Psp, zip)).IsValid);
+    }
+
+    [Fact]
+    public void Existing_output_for_archive_is_invalid()
+    {
+        var zip = Write("pack.zip");
+        File.WriteAllText(Path.Combine(_output, "pack.cso"), "x");
+
+        var result = _validator.Validate(Job(ConsoleKind.Psp, zip));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.Contains("pack.cso"));
+    }
+
+    [Fact]
+    public void Custom_output_path_is_used_for_existence_check()
+    {
+        var iso = Write("game.iso");
+        var custom = Path.Combine(_output, "otro nombre.cso");
+        File.WriteAllText(custom, "x");
+
+        var result = _validator.Validate(Job(ConsoleKind.Psp, iso, custom));
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.Contains("otro nombre.cso"));
+    }
+
+    [Theory]
+    [InlineData(ConsoleKind.PlayStation, "salida.cso")]
+    [InlineData(ConsoleKind.Psp, "salida.chd")]
+    [InlineData(ConsoleKind.Psp, "salida")]
+    public void Output_with_wrong_extension_is_invalid(ConsoleKind console, string outputName)
+    {
+        var source = console == ConsoleKind.Psp ? Write("game.iso") : Write("game.zip");
+
+        var result = _validator.Validate(Job(console, source, Path.Combine(_output, outputName)));
+
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public void Default_output_is_next_to_source_with_same_base_name()
+    {
+        var zip = Path.Combine(_input, "Mi Juego.zip");
+        var cue = Path.Combine(_input, "Otro.cue");
+        var iso = Path.Combine(_input, "Tercero.iso");
+
+        Assert.Equal(Path.Combine(_input, "Mi Juego.chd"), OutputPaths.DefaultFor(ConsoleKind.PlayStation, zip));
+        Assert.Equal(Path.Combine(_input, "Otro.chd"), OutputPaths.DefaultFor(ConsoleKind.PlayStation, cue));
+        Assert.Equal(Path.Combine(_input, "Tercero.cso"), OutputPaths.DefaultFor(ConsoleKind.Psp, iso));
     }
 }

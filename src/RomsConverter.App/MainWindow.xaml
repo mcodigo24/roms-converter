@@ -9,15 +9,22 @@
     </Window.DataContext>
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
-        <Style x:Key="ConsoleButton" TargetType="Button">
+        <Style x:Key="ConsoleButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Width" Value="220" />
             <Setter Property="Height" Value="120" />
             <Setter Property="Margin" Value="16" />
             <Setter Property="FontSize" Value="24" />
         </Style>
-        <Style x:Key="ActionButton" TargetType="Button">
-            <Setter Property="Padding" Value="16,6" />
+        <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="18,8" />
             <Setter Property="Margin" Value="8,0,0,0" />
+        </Style>
+        <Style x:Key="PrimaryActionButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Padding" Value="22,8" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+        </Style>
+        <Style x:Key="MutedText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
         </Style>
     </Window.Resources>
     <Grid>
@@ -37,19 +44,18 @@
         </StackPanel>
 
         <!-- Pantalla 2: cola de conversión -->
-        <Grid Margin="16" Visibility="{Binding IsConsoleSelected, Converter={StaticResource BoolToVisibility}}">
+        <Grid Margin="20" Visibility="{Binding IsConsoleSelected, Converter={StaticResource BoolToVisibility}}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <!-- Encabezado -->
             <DockPanel Grid.Row="0">
-                <Button DockPanel.Dock="Right" Content="Cambiar consola" Padding="12,4"
+                <Button DockPanel.Dock="Right" Content="Cambiar consola"
                         Command="{Binding ChangeConsoleCommand}" />
                 <TextBlock Text="{Binding SelectedConsoleName, StringFormat=Consola: {0}}"
                            FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -57,67 +63,68 @@
 
             <!-- Avisos -->
             <StackPanel Grid.Row="1" Margin="0,8,0,0">
-                <TextBlock Text="{Binding ToolsMessage}" Foreground="Firebrick" TextWrapping="Wrap"
+                <TextBlock Text="{Binding ToolsMessage}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap"
                            Visibility="{Binding HasToolsMessage, Converter={StaticResource BoolToVisibility}}" />
-                <TextBlock Text="{Binding Notice}" Foreground="DarkOrange" TextWrapping="Wrap"
+                <TextBlock Text="{Binding Notice}" Foreground="{StaticResource WarningBrush}" TextWrapping="Wrap"
                            Visibility="{Binding HasNotice, Converter={StaticResource BoolToVisibility}}" />
             </StackPanel>
 
             <!-- Zona de arrastrar y soltar -->
-            <Border Grid.Row="2" Margin="0,12,0,0" Padding="16" BorderThickness="2"
-                    BorderBrush="Gray" CornerRadius="6" AllowDrop="True" Background="Transparent"
+            <Border Grid.Row="2" Margin="0,12,0,0" Padding="18" BorderThickness="1.5"
+                    BorderBrush="{StaticResource BorderBrushSoft}" Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="10" AllowDrop="True"
                     Drop="DropZone_Drop" DragOver="DropZone_DragOver">
                 <DockPanel>
                     <Button DockPanel.Dock="Right" Content="Agregar archivos…" Style="{StaticResource ActionButton}"
                             IsEnabled="{Binding CanEdit}" Click="AddFiles_Click" />
-                    <StackPanel>
+                    <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Arrastrá y soltá los juegos acá" FontSize="16" />
-                        <TextBlock Text="{Binding AcceptedFormatsText}" Foreground="Gray" />
+                        <TextBlock Text="{Binding AcceptedFormatsText}" Style="{StaticResource MutedText}" Margin="0,2,0,0" />
                     </StackPanel>
                 </DockPanel>
             </Border>
 
             <!-- Lista -->
-            <ListView Grid.Row="3" Margin="0,12,0,0" ItemsSource="{Binding Items}"
+            <ListView Grid.Row="3" Margin="0,14,0,0" ItemsSource="{Binding Items}"
                       HorizontalContentAlignment="Stretch" AllowDrop="True"
                       Drop="DropZone_Drop" DragOver="DropZone_DragOver">
                 <ListView.ItemTemplate>
                     <DataTemplate>
-                        <Grid Margin="0,4">
+                        <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="110" />
-                                <ColumnDefinition Width="200" />
+                                <ColumnDefinition Width="180" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
-                                <TextBlock Text="{Binding DisplayMessage}" Foreground="Firebrick" TextWrapping="Wrap"
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Style="{StaticResource MutedText}" TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding OutputPath}" Margin="0,2,0,0"
+                                           Text="{Binding OutputFileName, StringFormat=Salida: {0}}" />
+                                <TextBlock Text="{Binding DisplayMessage}" Foreground="{StaticResource DangerBrush}"
+                                           TextWrapping="Wrap" Margin="0,4,0,0"
                                            Visibility="{Binding HasMessage, Converter={StaticResource BoolToVisibility}}" />
                             </StackPanel>
                             <TextBlock Grid.Column="1" Text="{Binding StatusText}" VerticalAlignment="Center"
                                        Margin="8,0" />
-                            <ProgressBar Grid.Column="2" Height="16" Minimum="0" Maximum="100"
+                            <ProgressBar Grid.Column="2" Minimum="0" Maximum="100" VerticalAlignment="Center"
                                          Value="{Binding Percent, Mode=OneWay}"
                                          IsIndeterminate="{Binding IsIndeterminate}" />
+                            <Button Grid.Column="3" Content="Cambiar salida…" Margin="12,0,0,0" Padding="10,4"
+                                    VerticalAlignment="Center" Click="ChangeOutput_Click"
+                                    IsEnabled="{Binding DataContext.CanEdit,
+                                        RelativeSource={RelativeSource AncestorType=ListView}}" />
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
 
-            <!-- Carpeta de salida -->
-            <DockPanel Grid.Row="4" Margin="0,12,0,0">
-                <TextBlock DockPanel.Dock="Left" Text="Carpeta de salida:" VerticalAlignment="Center" Margin="0,0,8,0" />
-                <Button DockPanel.Dock="Right" Content="Elegir…" Style="{StaticResource ActionButton}"
-                        IsEnabled="{Binding CanEdit}" Click="ChooseOutput_Click" />
-                <TextBox Text="{Binding OutputDirectory, UpdateSourceTrigger=LostFocus}"
-                         IsEnabled="{Binding CanEdit}" VerticalContentAlignment="Center" Padding="4" />
-            </DockPanel>
-
             <!-- Acciones -->
-            <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
                 <Button Content="Cancelar" Style="{StaticResource ActionButton}" Command="{Binding CancelCommand}" />
-                <Button Content="Convertir" Style="{StaticResource ActionButton}" Command="{Binding ConvertCommand}"
-                        FontWeight="SemiBold" />
+                <Button Content="Convertir" Style="{StaticResource PrimaryActionButton}"
+                        Command="{Binding ConvertCommand}" />
             </StackPanel>
         </Grid>
     </Grid>
