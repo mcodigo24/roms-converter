@@ -1,6 +1,6 @@
 # SPEC 01 — MVP conversor de ROMs PlayStation y PSP
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** —
 > **Date:** 2026-10-15
 > **Objective:** Aplicación WPF que, tras elegir consola (PlayStation o PSP), convierte en cola juegos soltados como archivos sueltos o comprimidos (zip/7z/rar) a `.chd` (PlayStation) o `.cso` (PSP), por defecto junto al archivo original y con su mismo nombre (editable por ítem).
@@ -70,45 +70,45 @@ Convenciones:
 
 ## Plan de implementación
 
-1. Agregar `ConsoleKind`, `ConversionJob`, `ValidationResult`, `ConversionProgress` en Core. Probar: `dotnet build` verde.
-2. Implementar `IJobValidator` para archivos sueltos: existencia de `.cue`/`.iso`, parseo de `FILE` del `.cue` y existencia de cada `.bin`, salida ya existente. Tests xUnit con carpetas temporales.
-3. Implementar `IArchiveExtractor` con SharpCompress (zip/7z/rar). Rechazar con error si el contenido tiene más de un `.cue`/`.iso`, o ninguno. Tests con zip generado en el test.
-4. Implementar un runner de proceso externo genérico (lanzar exe, leer stdout/stderr, parsear porcentaje, soportar `CancellationToken` matando el proceso). Test con un exe falso.
-5. Implementar `ChdConverter` sobre el runner. Al cancelar o fallar, borrar salida parcial.
-6. Implementar `CsoConverter` sobre el runner con el mismo comportamiento.
-7. Implementar `ConversionQueue` (serie, estados, cancelación, limpieza de temporales). Tests con convertidores falsos.
-8. Incluir `chdman.exe` y `maxcso.exe` en `src/RomsConverter.App/tools/` y copiarlos a la salida en el `.csproj`. Verificar que se resuelven por ruta al ejecutar.
+1. [x] Agregar `ConsoleKind`, `ConversionJob`, `ValidationResult`, `ConversionProgress` en Core. Probar: `dotnet build` verde.
+2. [x] Implementar `IJobValidator` para archivos sueltos: existencia de `.cue`/`.iso`, parseo de `FILE` del `.cue` y existencia de cada `.bin`, salida ya existente. Tests xUnit con carpetas temporales.
+3. [x] Implementar `IArchiveExtractor` con SharpCompress (zip/7z/rar). Rechazar con error si el contenido tiene más de un `.cue`/`.iso`, o ninguno. Tests con zip generado en el test.
+4. [x] Implementar un runner de proceso externo genérico (lanzar exe, leer stdout/stderr, parsear porcentaje, soportar `CancellationToken` matando el proceso). Test con un exe falso.
+5. [x] Implementar `ChdConverter` sobre el runner. Al cancelar o fallar, borrar salida parcial.
+6. [x] Implementar `CsoConverter` sobre el runner con el mismo comportamiento.
+7. [x] Implementar `ConversionQueue` (serie, estados, cancelación, limpieza de temporales). Tests con convertidores falsos.
+8. [x] Incluir `chdman.exe` y `maxcso.exe` en `src/RomsConverter.App/tools/` y copiarlos a la salida en el `.csproj`. Verificar que se resuelven por ruta al ejecutar.
    Agregar `THIRD-PARTY-NOTICES.txt` en la raíz del repo y copiarlo a la salida junto al exe. Debe incluir nombre, versión, copyright y texto de licencia de `chdman`, `maxcso` y sus dependencias empaquetadas, más SharpCompress y CommunityToolkit.Mvvm. Verificar cada licencia en su repo oficial al redactarlo.
-9. Pantalla de selección de consola en `MainViewModel` + vista (dos botones). Al elegir, pasa a la pantalla de cola.
-10. Pantalla de cola: drag & drop, botón agregar, lista de ítems con estado/progreso/errores, selector de carpeta de salida, botones Convertir y Cancelar, botón para volver a elegir consola (vacía la cola).
+9. [x] Pantalla de selección de consola en `MainViewModel` + vista (dos botones). Al elegir, pasa a la pantalla de cola.
+10. [x] Pantalla de cola: drag & drop, botón agregar, lista de ítems con estado/progreso/errores, selector de carpeta de salida, botones Convertir y Cancelar, botón para volver a elegir consola (vacía la cola).
 
-11. (Revisión 2026-10-15) Salida por ítem: `ConversionJob.OutputPath` reemplaza a `OutputDirectory`; por defecto junto al original con el mismo nombre; botón "Cambiar…" por ítem; dos ítems no pueden compartir salida. Se retira el selector global de carpeta.
-12. (Revisión 2026-10-15) Tema visual neutro: paleta oscura suave y estilos de controles en un diccionario de recursos.
+11. [x] (Revisión 2026-10-15) Salida por ítem: `ConversionJob.OutputPath` reemplaza a `OutputDirectory`; por defecto junto al original con el mismo nombre; botón "Cambiar…" por ítem; dos ítems no pueden compartir salida. Se retira el selector global de carpeta.
+12. [x] (Revisión 2026-10-15) Tema visual neutro: paleta oscura suave y estilos de controles en un diccionario de recursos.
 
 ## Criterios de aceptación
 
-- [ ] Al abrir la app se muestra la pregunta de consola con opciones PlayStation y PSP, y no se puede agregar archivos antes de elegir.
-- [ ] Con PlayStation, soltar un `.zip` con un `.cue` y su `.bin` agrega un ítem y, al convertir, genera un `.chd` en la carpeta de salida.
-- [ ] Con PSP, soltar un `.zip` con un `.iso` agrega un ítem y genera un `.cso` en la carpeta de salida.
-- [ ] `.7z` y `.rar` equivalentes producen el mismo resultado que `.zip`.
-- [ ] Soltar `.cue` + `.bin` sueltos (PlayStation) o un `.iso` suelto (PSP) funciona igual que el comprimido.
-- [ ] Un `.cue` con varios `.bin` se convierte en un único `.chd`.
-- [ ] Un `.cue` cuyo `.bin` referenciado no existe marca el ítem como inválido, muestra el nombre faltante y no se convierte.
-- [ ] Un comprimido sin `.cue`/`.bin` (PlayStation) o sin `.iso` (PSP) se marca inválido con mensaje y no se convierte.
-- [ ] Un comprimido con más de un juego se marca inválido con mensaje.
-- [ ] Si el archivo de salida ya existe, el ítem se marca inválido y no se sobrescribe.
-- [ ] Soltar archivos de la consola equivocada (ej. `.iso` estando en PlayStation) se rechaza con mensaje.
-- [ ] Varios juegos en cola se convierten uno después de otro, nunca dos a la vez.
-- [ ] Cada ítem muestra porcentaje de progreso mientras convierte.
-- [ ] Cancelar detiene el proceso externo, borra la salida parcial y la carpeta temporal.
-- [ ] Los archivos de entrada originales no cambian (mismo hash antes y después).
-- [ ] La carpeta temporal del job no existe tras completar, fallar o cancelar.
-- [ ] Al agregar un ítem, su salida por defecto está en la misma carpeta que la entrada y con el mismo nombre base (zip, cue o iso) y extensión `.chd`/`.cso`.
-- [ ] La salida de cada ítem se puede cambiar; la conversión escribe en la ruta elegida.
-- [ ] Dos ítems con la misma ruta de salida se marcan inválidos con mensaje.
-- [ ] La interfaz no usa fondos blancos: tema neutro de bajo contraste.
-- [ ] `THIRD-PARTY-NOTICES.txt` existe junto al exe y lista `chdman`, `maxcso`, SharpCompress y CommunityToolkit.Mvvm con su licencia y copyright.
-- [ ] `dotnet test` pasa en `RomsConverter.Core.Tests`.
+- [x] Al abrir la app se muestra la pregunta de consola con opciones PlayStation y PSP, y no se puede agregar archivos antes de elegir.
+- [x] Con PlayStation, soltar un `.zip` con un `.cue` y su `.bin` agrega un ítem y, al convertir, genera un `.chd` en la carpeta de salida.
+- [x] Con PSP, soltar un `.zip` con un `.iso` agrega un ítem y genera un `.cso` en la carpeta de salida.
+- [x] `.7z` y `.rar` equivalentes producen el mismo resultado que `.zip`.
+- [x] Soltar `.cue` + `.bin` sueltos (PlayStation) o un `.iso` suelto (PSP) funciona igual que el comprimido.
+- [x] Un `.cue` con varios `.bin` se convierte en un único `.chd`.
+- [x] Un `.cue` cuyo `.bin` referenciado no existe marca el ítem como inválido, muestra el nombre faltante y no se convierte.
+- [x] Un comprimido sin `.cue`/`.bin` (PlayStation) o sin `.iso` (PSP) se marca inválido con mensaje y no se convierte.
+- [x] Un comprimido con más de un juego se marca inválido con mensaje.
+- [x] Si el archivo de salida ya existe, el ítem se marca inválido y no se sobrescribe.
+- [x] Soltar archivos de la consola equivocada (ej. `.iso` estando en PlayStation) se rechaza con mensaje.
+- [x] Varios juegos en cola se convierten uno después de otro, nunca dos a la vez.
+- [x] Cada ítem muestra porcentaje de progreso mientras convierte.
+- [x] Cancelar detiene el proceso externo, borra la salida parcial y la carpeta temporal.
+- [x] Los archivos de entrada originales no cambian (mismo hash antes y después).
+- [x] La carpeta temporal del job no existe tras completar, fallar o cancelar.
+- [x] Al agregar un ítem, su salida por defecto está en la misma carpeta que la entrada y con el mismo nombre base (zip, cue o iso) y extensión `.chd`/`.cso`.
+- [x] La salida de cada ítem se puede cambiar; la conversión escribe en la ruta elegida.
+- [x] Dos ítems con la misma ruta de salida se marcan inválidos con mensaje.
+- [x] La interfaz no usa fondos blancos: tema neutro de bajo contraste.
+- [x] `THIRD-PARTY-NOTICES.txt` existe junto al exe y lista `chdman`, `maxcso`, SharpCompress y CommunityToolkit.Mvvm con su licencia y copyright.
+- [x] `dotnet test` pasa en `RomsConverter.Core.Tests`.
 
 ## Decisiones tomadas y descartadas
 
